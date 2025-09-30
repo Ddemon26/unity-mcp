@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  unity-mcp-server:
+    build:
+      context: ./UnityMcpBridge/UnityMcpServer~/src
+      dockerfile: Dockerfile
+    image: unity-mcp-server:latest
+    container_name: unity-mcp-server
+    ports:
+      - "${MCP_PORT:-6500}:6500"
+      - "${UNITY_PORT:-6400}:6400"
+    environment:
+      # Server configuration
+      - UNITY_HOST=${UNITY_HOST:-host.docker.internal}
+      - UNITY_PORT=${UNITY_PORT:-6400}
+      - MCP_PORT=${MCP_PORT:-6500}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Connection settings
+      - CONNECTION_TIMEOUT=${CONNECTION_TIMEOUT:-1.0}
+      - BUFFER_SIZE=${BUFFER_SIZE:-16777216}
+      - FRAMED_RECEIVE_TIMEOUT=${FRAMED_RECEIVE_TIMEOUT:-2.0}
+      - MAX_HEARTBEAT_FRAMES=${MAX_HEARTBEAT_FRAMES:-16}
+      
+      # Retry settings
+      - MAX_RETRIES=${MAX_RETRIES:-10}
+      - RETRY_DELAY=${RETRY_DELAY:-0.25}
+      - RELOAD_RETRY_MS=${RELOAD_RETRY_MS:-250}
+      - RELOAD_MAX_RETRIES=${RELOAD_MAX_RETRIES:-40}
+      
+      # Telemetry (optional - can be disabled)
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      - TELEMETRY_ENDPOINT=${TELEMETRY_ENDPOINT:-https://api-prod.coplay.dev/telemetry/events}
+      - DISABLE_TELEMETRY=${DISABLE_TELEMETRY:-false}
+    
+    volumes:
+      # Mount Unity project directory (adjust path as needed)
+      - ${UNITY_PROJECT_PATH:-./TestProjects/UnityMCPTests}:/unity-project:ro
+      
+      # Optional: Mount custom configuration
+      - ${CONFIG_PATH:-./config}:/app/config:ro
+    
+    networks:
+      - unity-mcp-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost', 6500)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Development services (optional)
+  unity-mcp-dev:
+    build:
+      context: ./UnityMcpBridge/UnityMcpServer~/src
+      dockerfile: Dockerfile
+      target: development
+    image: unity-mcp-server:dev
+    container_name: unity-mcp-dev
+    ports:
+      - "${DEV_MCP_PORT:-6501}:6500"
+      - "${DEV_UNITY_PORT:-6401}:6400"
+    environment:
+      - UNITY_HOST=${UNITY_HOST:-host.docker.internal}
+      - UNITY_PORT=${DEV_UNITY_PORT:-6401}
+      - MCP_PORT=${DEV_MCP_PORT:-6501}
+      - LOG_LEVEL=DEBUG
+      - TELEMETRY_ENABLED=false
+    volumes:
+      - ./UnityMcpBridge/UnityMcpServer~/src:/app:rw
+      - ${UNITY_PROJECT_PATH:-./TestProjects/UnityMCPTests}:/unity-project:ro
+    networks:
+      - unity-mcp-network
+    profiles:
+      - development
+    command: ["uv", "run", "--reload", "server.py"]
+
+networks:
+  unity-mcp-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  unity-project-data:
+  config-data:

@@ -40,3 +40,9 @@ TestProjects/UnityMCPTests/Packages/packages-lock.json
 # Backup artifacts
 *.backup
 *.backup.meta
+
+# Docker
+.env
+docker-compose.override.yml
+.docker/
+*.log

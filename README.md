@@ -271,6 +271,112 @@ On Windows, set `command` to the absolute shim, e.g. `C:\\Users\\YOU\\AppData\\L
 
 ---
 
+## 🐳 Docker Support
+
+Unity MCP now includes comprehensive Docker support for easy containerized deployment and development. This is particularly useful for:
+
+- Running MCP server in isolated environments
+- Consistent deployment across different systems
+- Cloud-based Unity development workflows
+- CI/CD pipelines
+
+### Quick Start with Docker Compose
+
+1. **Clone and setup:**
+   ```bash
+   git clone https://github.com/Ddemon26/unity-mcp.git
+   cd unity-mcp
+   cp .env.example .env
+   ```
+
+2. **Configure environment (optional):**
+   Edit `.env` file to customize ports, Unity project path, and other settings.
+
+3. **Run with Docker Compose:**
+   ```bash
+   # Production mode
+   docker-compose up unity-mcp-server
+
+   # Development mode with hot reload
+   docker-compose --profile development up unity-mcp-dev
+   ```
+
+### Docker Configuration
+
+#### Environment Variables
+
+The Docker setup supports all server configuration via environment variables:
+
+```bash
+# Network settings
+UNITY_HOST=host.docker.internal  # Use this for Unity on host machine
+UNITY_PORT=6400
+MCP_PORT=6500
+
+# Development ports
+DEV_UNITY_PORT=6401
+DEV_MCP_PORT=6501
+
+# Logging and performance
+LOG_LEVEL=INFO
+CONNECTION_TIMEOUT=1.0
+MAX_RETRIES=10
+
+# Telemetry (set DISABLE_TELEMETRY=true to disable)
+TELEMETRY_ENABLED=true
+DISABLE_TELEMETRY=false
+
+# Unity project path (mounted as volume)
+UNITY_PROJECT_PATH=./TestProjects/UnityMCPTests
+```
+
+#### Docker Commands
+
+```bash
+# Build the image
+docker build -t unity-mcp-server ./UnityMcpBridge/UnityMcpServer~/src
+
+# Run standalone container
+docker run -p 6500:6500 -e UNITY_HOST=host.docker.internal unity-mcp-server
+
+# Development with volume mount
+docker run -v $(pwd)/UnityMcpBridge/UnityMcpServer~/src:/app \
+  -p 6500:6500 -e LOG_LEVEL=DEBUG unity-mcp-server
+
+# Check container health
+docker ps
+docker logs unity-mcp-server
+```
+
+#### Multi-stage Build
+
+The Dockerfile supports both development and production builds:
+
+- **Development**: Includes dev dependencies, volume mounts, auto-reload
+- **Production**: Optimized image size, production settings, health checks
+
+### Docker with Unity
+
+When Unity Editor runs on your host machine and MCP server in Docker:
+
+1. Use `UNITY_HOST=host.docker.internal` (Windows/Mac) or `UNITY_HOST=172.17.0.1` (Linux)
+2. Ensure Unity project is accessible via volume mounts
+3. Configure Unity MCP plugin to connect to the containerized server
+
+### Troubleshooting Docker Setup
+
+**Connection Issues:**
+- Verify `UNITY_HOST` points to your host machine from container
+- Check firewall settings for Unity and MCP ports
+- Ensure Unity MCP plugin is configured with correct container ports
+
+**Performance:**
+- Adjust `BUFFER_SIZE` and timeout settings in `.env`
+- Monitor container resources with `docker stats`
+- Use development profile for debugging with verbose logging
+
+---
+
 ## Development & Contributing 🛠️
 
 ### For Developers
