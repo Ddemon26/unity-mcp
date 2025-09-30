@@ -375,6 +375,8 @@ When Unity Editor runs on your host machine and MCP server in Docker:
 - Monitor container resources with `docker stats`
 - Use development profile for debugging with verbose logging
 
+📖 **See [DOCKER.md](DOCKER.md)** for complete Docker implementation details and advanced configuration options.
+
 ---
 
 ## Development & Contributing 🛠️

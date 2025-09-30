@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   unity-mcp-server:
     build:
